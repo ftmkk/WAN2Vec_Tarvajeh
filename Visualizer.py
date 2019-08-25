@@ -19,4 +19,4 @@ class Visualizer:
             y = y_coords[i]
             plt.scatter(x, y, alpha=0.6)
             plt.text(x + 0.03, y + 0.03, self.get_persian_text(label), name='Times New Roman')
-        plt.show()
+        plt.show();
