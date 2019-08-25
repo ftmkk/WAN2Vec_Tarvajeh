@@ -55,7 +55,7 @@ def main(argv):
         print(wan.graph.number_of_edges())
         wan.reverse_weight()
 
-        node2vec = Node2Vec(wan.graph, dimensions=10, walk_length=20, num_walks=50, workers=4, temp_folder='temp',
+        node2vec = Node2Vec(wan.graph, dimensions=10, walk_length=20, num_walks=50, workers=4,
                             p=0.01, q=0.01)
         model = node2vec.fit(window=10, min_count=1, batch_words=4)
 
