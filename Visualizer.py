@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt
 from bidi import algorithm as bidialg
 import arabic_reshaper
 
+from IPython.core.interactiveshell import InteractiveShell
+
+InteractiveShell.ast_node_interactivity = "all"
+
 
 class Visualizer:
     def __init__(self):
