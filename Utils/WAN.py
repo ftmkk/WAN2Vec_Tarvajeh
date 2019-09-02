@@ -1,6 +1,7 @@
-from ResponseInPack import ResponseInPack
-from WordNormalizer import WordNormalizer
 import networkx as nx
+
+from Utils.ResponseInPack import ResponseInPack
+from Utils.WordNormalizer import WordNormalizer
 
 
 class WAN:

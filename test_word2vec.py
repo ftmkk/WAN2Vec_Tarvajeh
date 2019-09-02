@@ -1,11 +1,13 @@
+import getopt
+import sys
+from os import path
+
 import numpy as np
 from node2vec import Node2Vec
 from sklearn.manifold import TSNE
-from os import path
-import sys, getopt
 
-from Visualizer import Visualizer
-from WAN import WAN
+from Utils.Visualizer import Visualizer
+from Utils.WAN import WAN
 
 
 def read_word2vec(path):
@@ -30,11 +32,11 @@ def read_args(argv):
     try:
         opts, args = getopt.getopt(argv, "hi:o:", ["ifile=", "ofile="])
     except getopt.GetoptError:
-        print('test.py -i <inputfile> -o <outputfile>')
+        print('test_tweetCleaner.py -i <inputfile> -o <outputfile>')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print('test.py -i <inputfile> -o <outputfile>')
+            print('test_tweetCleaner.py -i <inputfile> -o <outputfile>')
             sys.exit()
         elif opt in ("-i", "--ifile"):
             inputfile = arg
@@ -80,7 +82,6 @@ def main(argv):
     # s = nx.neighbors(pruned_wan, keyword)
     # for e in s:
     #     print(e, s[e])
-
 
 
 if __name__ == "__main__":
