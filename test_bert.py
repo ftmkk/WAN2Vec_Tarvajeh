@@ -10,10 +10,9 @@ import matplotlib.pyplot as plt
 # matplotlib inline
 
 # Load pre-trained model tokenizer (vocabulary)
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
 
-text = "Here is the sentence I want embeddings for."
-text = "After stealing money from the bank vault, the bank robber was seen fishing on the Mississippi river bank."
+text = "این یک تست است"
 marked_text = "[CLS] " + text + " [SEP]"
 
 print(marked_text)
@@ -38,6 +37,31 @@ model = BertModel.from_pretrained('bert-base-uncased')
 
 # Put the model in "evaluation" mode, meaning feed-forward operation.
 model.eval()
+
+# Predict hidden states features for each layer
+with torch.no_grad():
+    encoded_layers, _ = model(tokens_tensor, segments_tensors)
+
+print("Number of layers:", len(encoded_layers))
+layer_i = 0
+
+print("Number of batches:", len(encoded_layers[layer_i]))
+batch_i = 0
+
+print("Number of tokens:", len(encoded_layers[layer_i][batch_i]))
+token_i = 0
+
+print("Number of hidden units:", len(encoded_layers[layer_i][batch_i][token_i]))
+
+# For the 5th token in our sentence, select its feature values from layer 5.
+token_i = 5
+layer_i = 5
+vec = encoded_layers[layer_i][batch_i][token_i]
+
+# Plot the values as a histogram to show their distribution.
+plt.figure(figsize=(10, 10))
+plt.hist(vec, bins=200)
+plt.show()
 
 token_embeddings = []
 

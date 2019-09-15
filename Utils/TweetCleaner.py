@@ -30,7 +30,7 @@ class TweetCleaner:
                 hashtags.append(w[0])
             elif w[1] == '@':
                 pass
-            elif w[0] != 'RT' and len(w[0]) > 1:
+            elif w[0] != 'RT':
                 words.append(w[0])
         return words, hashtags
 
