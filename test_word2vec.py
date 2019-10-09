@@ -1,88 +1,44 @@
-import getopt
-import sys
+import multiprocessing
+from time import time
+
+from gensim.models import Word2Vec
 from os import path
 
-import numpy as np
-from node2vec import Node2Vec
-from sklearn.manifold import TSNE
+model_path = 'outputs/w2v/w2v_model_minCount10'
 
-from Utils.Visualizer import Visualizer
-from Utils.WAN import WAN
+if not path.exists(model_path):
+    w2v_model = Word2Vec(min_count=10,
+                         window=4,
+                         size=300,
+                         sample=6e-5,
+                         alpha=0.03,
+                         min_alpha=0.0007,
+                         negative=10,
+                         workers=multiprocessing.cpu_count() - 1)
 
+    with open('inputs/tweets_tokens.txt') as f:
+        sentences = [s.split(' ') for s in f.read().split('\n')]
 
-def read_word2vec(path):
-    word_embeddings_labels = []
-    min_col_count = 1000000
-    with open(path) as f:
-        for line in f.read().split('\n')[1:]:
-            elements = line.split(' ')
-            if len(elements) < 2:
-                continue
-            word_embeddings_labels.append(elements[0])
-            min_col_count = min(min_col_count, len(elements))
+    t = time()
 
-    word_embeddings = np.loadtxt(path, usecols=tuple(range(1, min_col_count)), skiprows=1)
-    return word_embeddings, word_embeddings_labels
+    w2v_model.build_vocab(sentences, progress_per=10000)
 
+    print('Time to build vocab: {} mins'.format(round((time() - t) / 60, 2)))
 
-def read_args(argv):
-    outputfile = 'outputs/word2vec.csv'
-    inputfile = 'inputs/allResponses3.csv'
+    t = time()
 
-    try:
-        opts, args = getopt.getopt(argv, "hi:o:", ["ifile=", "ofile="])
-    except getopt.GetoptError:
-        print('test_tweetCleaner.py -i <inputfile> -o <outputfile>')
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == '-h':
-            print('test_tweetCleaner.py -i <inputfile> -o <outputfile>')
-            sys.exit()
-        elif opt in ("-i", "--ifile"):
-            inputfile = arg
-        elif opt in ("-o", "--ofile"):
-            outputfile = arg
-    return inputfile, outputfile
+    w2v_model.train(sentences, total_examples=w2v_model.corpus_count, epochs=60, report_delay=1)
 
+    print('Time to train the model: {} mins'.format(round((time() - t) / 60, 2)))
 
-def main(argv):
-    inputfile, outputfile = read_args(argv)
+    w2v_model.init_sims(replace=True)
 
-    if not path.exists(outputfile):
-        wan = WAN(inputfile)
-        print(wan.graph.number_of_edges())
-        wan.prune_edge(min_weight=1)
-        print(wan.graph.number_of_edges())
-        wan.prune_node(min_freq=2)
-        print(wan.graph.number_of_edges())
-        wan.reverse_weight()
+    w2v_model.save(model_path)
+    # w2v_model.save_word2vec_format('w2v_model_vectors.csv')
+    w2v_model.wv.save_word2vec_format(model_path + '_vectors.csv')
 
-        node2vec = Node2Vec(wan.graph, dimensions=100, walk_length=80, num_walks=200, workers=4)
-        model = node2vec.fit(window=10, min_count=1, batch_words=4)
+w2v_model = Word2Vec.load(model_path)
 
-        model.wv.save_word2vec_format(outputfile)
+print(w2v_model.wv.most_similar(positive=['مدرسه']))
 
-        word_embeddings = model.wv.vectors
-        word_embeddings_labels = model.wv.index2word
-    else:
-        word_embeddings, word_embeddings_labels = read_word2vec(outputfile)
-
-    X_embedded = TSNE(n_components=2).fit_transform(word_embeddings)
-    viz = Visualizer()
-    viz.scatter_plot(X_embedded[:, 0], X_embedded[:, 1], word_embeddings_labels)
-
-    # simulating a pandas df['type'] column
-
-    # # Save model for later use
-    # model.save('outputs/word2vec_model')
-    #
-    # keyword = 'پیشرفت'
-    # # Look for most similar nodes
-    # print(model.wv.most_similar(keyword))  # Output node names are always strings
-    # s = nx.neighbors(pruned_wan, keyword)
-    # for e in s:
-    #     print(e, s[e])
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
+# print(w2v_model.wv.similarity("فوتبال", 'توپ'))

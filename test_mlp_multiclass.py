@@ -1,3 +1,4 @@
+import pandas
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Flatten, InputLayer
 from keras import backend as K
@@ -8,6 +9,7 @@ from keras import __version__
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from keras.optimizers import SGD
 from sklearn import preprocessing, metrics
 
 sns.set()
@@ -36,102 +38,73 @@ def f1_m(y_true, y_pred):
 print('Using Keras version:', __version__, 'backend:', K.backend())
 assert (LV(__version__) >= LV("2.0.0"))
 
+output = 'outputs/mlp_multiclass/'
 # Data preprocessing
-if not path.exists('outputs/mlp/X.npy'):
-    vector_path = 'outputs/v.txt'
-    v = np.loadtxt(vector_path, delimiter=',')
+if not path.exists(output + 'X.npy'):
+    vector_path = 'outputs/subject_classification_dataset_0.txt'
+    v = np.loadtxt(vector_path, delimiter=',', dtype='str', encoding='utf8')
     np.random.shuffle(v)
-    X = v[:, :-1]
-    Y = v[:, -1].astype('int')
-    np.save('outputs/mlp/X', X)
-    np.save('outputs/mlp/Y', Y)
+    # v = v[:100,:]
+    X = v[:, :-1].astype('float')
+    Y = v[:, -1]
+    Y = np.array(pandas.get_dummies(Y))
+    # Y = Y.values.argmax(1)
+    np.save(output + 'X', X)
+    np.save(output + 'Y', Y)
 else:
-    X = np.load('outputs/mlp/X.npy')
-    Y = np.load('outputs/mlp/Y.npy')
+    X = np.load(output + 'X.npy')
+    Y = np.load(output + 'Y.npy')
 
-X = X[93145:93245, :]
-Y = Y[93145:93245]
+# Y = np.array(Y)
+# print(Y)
+# print(Y.shape)
+Y = Y[:, 1:]
+# X = X[:, :300]
 X = preprocessing.scale(X)
-Y = (Y > 10).astype(int)
+# print(X)
+# print(Y)
+# print(X.shape)
+# print(Y.shape)
+# X = X[93145:93245, :]
+# Y = Y[93145:93245]
+# Y = (Y > 10).astype(int)
 record_count = X.shape[0]
+class_count = Y.shape[1]
 input_size = X.shape[1]
-train_size = int(0.5 * record_count)
+train_size = int(0.2 * record_count)
 X_train = X[:train_size, :]
-# X_train = X_train.astype('float32')
+X_train = X_train.astype('float32')
 X_test = X[train_size:, :]
-Y_train = Y[:train_size]
-Y_test = Y[train_size:]
+Y_train = Y[:train_size, :]
+Y_test = Y[train_size:, :]
 
 print()
 print('data loaded: train:', len(X_train), 'test:', len(X_test))
-print('X_train:', X_train.shape)
-print('Y_train:', Y_train.shape)
-print('+_rate:', len(np.where(Y_train == 1)[0]) / Y_train.shape[0])
-
-print('Y_test:', Y_test.shape)
-print('+_rate:', len(np.where(Y_test == 1)[0]) / Y_test.shape[0])
 
 # Model architecture
 model = Sequential()
 model.add(InputLayer(input_shape=(input_size,)))
-model.add(Dense(units=10))
+model.add(Dense(units=100))
 model.add(Activation('relu'))
 model.add(Dropout(0.2))
-model.add(Dense(units=1, activation='sigmoid'))
-
-model.compile(loss='binary_crossentropy',
-              optimizer='adam',
-              metrics=['acc', f1_m, precision_m, recall_m])
-
-###############################################
-# # Model initialization:
-# model = Sequential()
-# model.add(InputLayer(input_shape=(input_size,)))
-# # model.add(Flatten())
-#
-# # A simple model:
-# model.add(Dense(units=20))
+# model.add(Dense(units=40))
 # model.add(Activation('relu'))
-#
-# # # A bit more complex model:
-# # model.add(Dense(units=50))
-# # model.add(Activation('relu'))
-# # model.add(Dropout(0.2))
-#
-# # model.add(Dense(units=50))
-# # model.add(Activation('relu'))
-# # model.add(Dropout(0.2))
-#
-# # The last layer needs to be like this:
-# model.add(Dense(units=1, activation='relu'))
-#
-# model.compile(loss='mean_squared_logarithmic_error',
-#               optimizer='rmsprop',
-#               metrics=['accuracy']
-#               )
-#################################################
-# model = Sequential()
-# model.add(Dense(input_dim=X_train.shape[1], output_dim=256))
-# model.add(Activation("tanh"))
-# model.add(Dropout(0.50))
-# model.add(Dense(output_dim=128))
-# model.add(Activation("relu"))
-# model.add(Dropout(0.50))
-# model.add(Dense(output_dim=64))
-# model.add(Activation("relu"))
-# model.add(Dropout(0.50))
-# model.add(Dense(output_dim=1))
-# model.compile("nadam", "mae")
-#################################################
+# model.add(Dropout(0.4))
+model.add(Dense(units=class_count, activation='softmax'))
+
+
+model.compile(loss='categorical_crossentropy',
+              optimizer='sgd',
+              metrics=['accuracy'])
 
 print(model.summary())
 
 # Learning
-epochs = 100  # one epoch with simple model takes about 4 seconds
+epochs = 20  # one epoch with simple model takes about 4 seconds
 
 history = model.fit(X_train, Y_train,
                     epochs=epochs,
-                    batch_size=80,
+                    batch_size=4,
                     verbose=2)
 
 # Curves
